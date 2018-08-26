@@ -79,6 +79,7 @@ class Redis
       @options = _parse_options(options)
       @reconnect = true
       @logger = @options[:logger]
+      @logger&.debug "initialize"
       @connection = nil
       @command_map = {}
 
@@ -96,6 +97,7 @@ class Redis
 
     def connect
       @pid = Process.pid
+      @logger&.debug "connection #{@pid}"
 
       # Don't try to reconnect when the connection is fresh
       with_reconnect(false) do
@@ -238,10 +240,12 @@ class Redis
     end
 
     def connected?
+      @logger&.debug "connected?"
       !! (connection && connection.connected?)
     end
 
     def disconnect
+      @logger&.debug "disconnect"
       connection.disconnect if connected?
     end
 
@@ -263,7 +267,9 @@ class Redis
 
     def read
       io do
+        @logger&.debug "reading"
         value = connection.read
+        @logger&.debug "readed"
         @pending_reads -= 1
         value
       end
@@ -272,7 +278,9 @@ class Redis
     def write(command)
       io do
         @pending_reads += 1
+        @logger&.debug "writing"
         connection.write(command)
+        @logger&.debug "written"
       end
     end
 
@@ -332,6 +340,7 @@ class Redis
     end
 
     def establish_connection
+      @logger&.debug "establish_connection"
       server = @connector.resolve.dup
 
       @options[:host] = server[:host]
@@ -352,6 +361,7 @@ class Redis
     end
 
     def ensure_connected
+      @logger&.debug "ensure_connected"
       disconnect if @pending_reads > 0
 
       attempts = 0
